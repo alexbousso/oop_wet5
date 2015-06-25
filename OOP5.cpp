@@ -34,9 +34,31 @@ class God : public SuperCow {};
 
 class Dog : public God {};
 
-class Satan {};
 
-class Cat : public Satan {};
+
+
+// Dynamically inheriting classes
+class Satan : public OOPPolymorphic<Satan> {
+public:
+	Satan() {
+		RegisterInheritance(NULL);
+	}
+
+	const Type* MyType() {
+		return NULL; //OOPPolymorphic<Satan>::GetType();
+	}
+};
+
+class Cat : public Satan, public OOPPolymorphic<Cat> {
+public:
+	Cat() {
+		OOPPolymorphic<Cat>::RegisterInheritance(Satan::GetType());
+	}
+
+	const Type* MyType() {
+		return NULL;//OOPPolymorphic<Cat>::GetType();
+	}
+};
 
 static bool testStaticAssert() {
 		int i = 5;
@@ -78,6 +100,12 @@ static bool testStaticAssert() {
 
 	ASSERT(typeid(mooo) != typeid(Dog));
 	ASSERT(typeid(mooo) == typeid(SuperCow));
+
+	return true;
+}
+
+static bool testInheritsFrom() {
+
 
 	return true;
 }
