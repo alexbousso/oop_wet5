@@ -74,17 +74,22 @@ public:
 		static_assert(((((sizeof(bothReferences)) | (sizeof(bothPointers))) & (sizeof(checkInheritance))) |
 			(sizeof(implicitlyConvertible))) == 1, "");
 
-		// static_assert(sizeof(IF<(is_convertible<Src, Dst>::value), yes, 
-		// 	IF<(is_reference<Src>::value && is_reference<Dst>::value), yes,
-		// 	IF<(is_pointer<Src>::value && is_pointer<Dst>::value), yes,
-		// 	no>::RET>::RET>::RET) == sizeof(yes), "");
-
 		return (Dst)src;
 	}
 
 	template<typename Dst, typename Src>
-	static Dst my_dynamic_cast(Src src);
-	static int InheritsFrom(const Type* derived,const Type* base);
+	static Dst my_dynamic_cast(Src src) {
+		// typedef char bothReferences[(is_reference<Src>::value && is_reference<Dst>::value) ? 1 : 0];
+		// typedef char bothPointers[(is_pointer<Src>::value && is_pointer<Dst>::value) ? 1 : 0];
+
+		// static_assert((sizeof(bothPointers) | (sizeof(bothReferences))) == 1, "");
+
+		// IF<>::RET
+	}
+
+	static int InheritsFrom(const Type* derived,const Type* base) {
+
+	}
 };
 
 #endif /* OOP_H_ */

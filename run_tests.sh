@@ -36,7 +36,8 @@ echo "Compiling OOP5.cpp ..."
 
 rm -f *.h.gch
 rm -f OOP5
-runCommand "$COMPILE OOP5.cpp -o OOP5"
+#runCommand "$COMPILE OOP5.cpp -o OOP5"
+runCommand "make"
 
 chmod +x OOP5
 
