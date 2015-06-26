@@ -8,8 +8,23 @@
 #include <vector>
 #include <list>
 #include <algorithm>
+#include <cassert>
+#include <typeinfo> // TODO REMOVE
+#include <iostream> // TODO REMOVE
 
 using namespace std;
+
+// Forward declarations
+class OOP5;
+struct Type;
+
+// Global type UUID counter, increased whenever a new OOPPolymorphic type is created
+static int uuidCounter = 0;
+
+// Implementation of the static data structure used to hold the inheritance relationships.
+// For each element in the graph, the first item in the vector is the type itself, and
+// the second element and forth are the parents
+static vector<vector<const Type*>> inheritance_graph = vector<vector<const Type*>>();
 
 typedef char (&yes)[1];
 typedef char (&no)[2];
@@ -32,74 +47,77 @@ struct IsBaseOf
 };
 
 struct Type {
-	const string name;
-	size_t hash_code;
+	const int uuid;
 
-	template <typename T>
-	Type(T t) {
-		t = t;
+	Type() : uuid(uuidCounter++) {}
+
+	inline bool operator==(const Type& other) const {
+		return this->uuid == other.uuid;
 	}
-
-	Type(const string name, const int type_size) : name(name),
-			hash_code(hash<string>(name) + PRIME_NUMBER * type_size) {}
-
-	inline bool operator ==(const Type& other) const {
-		return this->hash_code == other.hash_code;
-	}
-
-private:
-	const int PRIME_NUMBER = 97;
-	
 };
 
 template <class T>
 class OOPPolymorphic {
 	friend T; //only the actual type can register this class at the OOP5's data structure.
 private:
-	static Type* my_type = nullptr;
+	static Type* my_type;
 
+	// Looks for the type in the inheritance graph and adds an edge connecting the type and its parent.
+	// If the type is not in the inheritance graph yet, adds it first
 	void RegisterInheritence(const Type* base) {
 		bool isInGraph = false;
 		for(auto it : inheritance_graph) {
-			if(it == base) {
+			if(*(it)[0] == *my_type) {
 				isInGraph = true;
+				break;
 			}
 		}
 
 		if(!isInGraph) {
-			inheritance_graph.push_back(vector<Type*>(1, base));
+			inheritance_graph.push_back(vector<const Type*>(1, my_type));
 		}
 
-		if(base == nullptr) {
+		if(base == NULL) {
 			return;
 		}
 
-		for(auto it : inheritance_graph) {
-			if(it == base) {
-				it->push_back(base);
+		for(int i = 0 ; i < inheritance_graph.size() ; i++) {
+			if(*inheritance_graph[i][0] == *my_type) {
+				for(auto it : inheritance_graph[i]) {
+					if(*it == *base) {
+						return;
+					}
+				}
+
+				inheritance_graph[i].push_back(base);
 			}
 		}
+
+//		for(auto it : inheritance_graph) {
+//			if(*(it)[0] == *my_type) {
+//				it->push_back(base);
+//			}
+//		}
 	}
 
 	OOPPolymorphic() {
-		my_type = new Type()
-	}
-public:
-	static const Type* GetType() {
-		if(my_type == nullptr) {
-			my_type = Type()
+		if(my_type == NULL) {
+			my_type = new Type();
 		}
 	}
-	virtual const Type* MyType() =0; //You can assume this method will always be overriden by the inheriting class, and it will be simply implemented by: return OOPPolymorphic<NewClassName>::GetType()
+
+public:
+	static const Type* GetType() {
+		return my_type;
+	}
+	virtual const Type* MyType() = 0; //You can assume this method will always be overriden by the inheriting class, and it will be simply implemented by: return OOPPolymorphic<NewClassName>::GetType()
 };
+
+template <typename T>
+Type* OOPPolymorphic<T>::my_type = NULL;// new Type();
 
 class OOP5 {
 public:
-	// Implementation of the static data structure used to hold the inheritance relationships.
-	// For each element in the graph, the first item in the vector is the type itself, whereas
-	// the second element and forth are the parents
-	static vector<vector<Type*>> inheritance_graph;
-
 	template<typename Dst, typename Src>
 	static Dst my_static_cast(Src src) {
 		typedef char implicitlyConvertible[(is_convertible<Src, Dst>::value) ? 1 : 0];
@@ -146,36 +164,114 @@ public:
 		typedef char implicitlyConvertible[(is_convertible<Src, Dst>::value) ? 1 : 0];
 
 		// TODO: check this code, according to bullet number 2 in part 2.1 <----------------------------------------- remember me!
-		conditional<sizeof(implicitlyConvertible) == 1, yes, no>::type res;
-		if (sizeof(res) == sizeof(yes)) {
+		//typename conditional<sizeof(implicitlyConvertible) == 1, yes, no>::type res;
+		if (sizeof(implicitlyConvertible) == 1) {
 			return (Dst)src;
 		}
 
-		typedef char isOOPPolymorphic[((IsBaseOf<OOPPolymorphic, Src>::value) && 
-			(IsBaseOf<OOPPolymorphic, Dst>::value)) ? 1 : 0];
+		typedef typename remove_pointer<Src>::type SrcNoPtr;
+		typedef typename remove_pointer<Dst>::type DstNoPtr;
+
+		typedef typename remove_reference<SrcNoPtr>::type SrcClean;
+		typedef typename remove_reference<DstNoPtr>::type DstClean;
+
+		typedef char isOOPPolymorphic[((IsBaseOf<OOPPolymorphic<SrcClean>, SrcClean>::value) &&
+			(IsBaseOf<OOPPolymorphic<DstClean>, DstClean>::value)) ? 1 : 0];
 
 		// Checking if Src is implicitly convertible to Dst, or if both Src and Dst inherit from
-		// the class OOPPolymorphic<>
-		static_assert(((implicitlyConvertible) | (isOOPPolymorphic<Src>)) == 0, "");
+		// the class OOPPolymorphic
+		static_assert(((sizeof(implicitlyConvertible)) | (sizeof(isOOPPolymorphic))) == 1, "");
+		cout << "Src is: " << typeid(src).name() << endl;
+		cout << "Size of isOOPPolymorphic: " << sizeof(isOOPPolymorphic) << endl;
+		cout << "Size of implicitlyConvertible: " << sizeof(implicitlyConvertible) << endl;
+
+		// Find the dynamic type of src
+		const Type* srcStaticType = OOPPolymorphic<SrcClean>::GetType();
+		const Type* dstStaticType = OOPPolymorphic<DstClean>::GetType();
+		const Type* srcDynamicType = returnSource(src)->MyType();
+		
+
+		if((*srcStaticType == *srcDynamicType) || InheritsFrom(srcDynamicType, srcStaticType) == 1) {
+			if(InheritsFrom(dstStaticType, srcStaticType) == 1) {
+				if((*srcDynamicType == *dstStaticType) || InheritsFrom(srcDynamicType, dstStaticType)) {
+					return (Dst)src;
+				}
+			}
+		}
+
+		if(is_pointer<Src>::value) {
+			return NULL;
+		} else {
+			assert(is_reference<Src>::value);
+			throw std::bad_cast();
+		}
 	}
 
 	static int InheritsFrom(const Type* derived,const Type* base) {
-		vector<Type*> baseLocation = find(inheritance_graph.iterator_begin(), inheritance_graph.iterator_end(), base);
-		vector<Type*> derivedLocation = find(inheritance_graph.iterator_begin(), inheritance_graph.iterator_end(), derived);
+		if(base == NULL || derived == NULL)
+			return 0;
+
+		vector<const Type*> baseLocation = findGraphNode(base);
+		vector<const Type*> derivedLocation = findGraphNode(derived);
 
         return countPaths(derivedLocation, baseLocation); 
 	}
 
 private:
 
-	int countPaths(vector<Type>& current, vector<Type>& destination) {
+	template<typename Src>
+	static Src* returnSource(Src* src) {
+		return src;
+	}
+
+	template<typename Src>
+	static Src* returnSource(Src& src) {
+		return &src;
+	}
+
+	static vector<const Type*> findGraphNode(const Type* type) {
+		for(auto it = inheritance_graph.begin(); it != inheritance_graph.end(); it++) {
+			if(*((*it)[0]) == *type) {
+				return *it;
+			}
+		}
+	}
+
+	// static int countPaths(int current, int destination) {
+	// 	if(current == destination) {
+	// 		return 1;
+	// 	}
+
+	// 	int count = 0;
+	// 	for(auto it : inheritance_graph[current]) {
+	// 		count += countPaths(it);
+	// 	}
+
+	// 	return count;
+	// }
+
+	static int countPaths(vector<const Type*> &current, vector<const Type*> &destination) {
 		if(current == destination) {
 			return 1;
 		}
 
+		if(current.size() <= 1) {
+			return 0;
+		}
+
+		assert(current.size() > 1);
+
 		int count = 0;
-		for(auto it : inheritance_graph[current]) {
-			count += countPaths(it);
+		for(auto it = ++current.begin(); it != current.end(); it++) {
+			vector<const Type*> nextVector;
+			for(int i = 0 ; i < inheritance_graph.size() ; i++) {
+				if(inheritance_graph[i][0] == *it) {
+					nextVector = inheritance_graph[i];
+					break;
+				}
+			}
+
+			count += countPaths(nextVector, destination);
 		}
 
 		return count;
