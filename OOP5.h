@@ -2,15 +2,12 @@
 #define OOP_H_
 
 #include <type_traits>
-#include <functional> // for std::hash<>()
 #include <utility>
 #include <string>
 #include <vector>
-#include <list>
 #include <algorithm>
 #include <cassert>
-#include <typeinfo> // TODO REMOVE
-#include <iostream> // TODO REMOVE
+#include <typeinfo>
 
 using namespace std;
 
@@ -92,12 +89,6 @@ private:
 				inheritance_graph[i].push_back(base);
 			}
 		}
-
-//		for(auto it : inheritance_graph) {
-//			if(*(it)[0] == *my_type) {
-//				it->push_back(base);
-//			}
-//		}
 	}
 
 	OOPPolymorphic() {
@@ -114,7 +105,7 @@ public:
 };
 
 template <typename T>
-Type* OOPPolymorphic<T>::my_type = NULL;// new Type();
+Type* OOPPolymorphic<T>::my_type = NULL;
 
 class OOP5 {
 public:
@@ -163,8 +154,6 @@ public:
 
 		typedef char implicitlyConvertible[(is_convertible<Src, Dst>::value) ? 1 : 0];
 
-		// TODO: check this code, according to bullet number 2 in part 2.1 <----------------------------------------- remember me!
-		//typename conditional<sizeof(implicitlyConvertible) == 1, yes, no>::type res;
 		if (sizeof(implicitlyConvertible) == 1) {
 			return (Dst)src;
 		}
@@ -197,15 +186,7 @@ public:
 		}
 
 		return return_from_dynamic_cast<Dst, SrcClean>(src);
-//		if(is_pointer<Src>::value) {
-//			return NULL;
-//		} else {
-//			assert(is_reference<Src>::value);
-//			throw std::bad_cast();
-//		}
 	}
-
-
 
 
 	static int InheritsFrom(const Type* derived,const Type* base) {
@@ -247,19 +228,6 @@ private:
 			}
 		}
 	}
-
-	// static int countPaths(int current, int destination) {
-	// 	if(current == destination) {
-	// 		return 1;
-	// 	}
-
-	// 	int count = 0;
-	// 	for(auto it : inheritance_graph[current]) {
-	// 		count += countPaths(it);
-	// 	}
-
-	// 	return count;
-	// }
 
 	static int countPaths(vector<const Type*> &current, vector<const Type*> &destination) {
 		if(current == destination) {
