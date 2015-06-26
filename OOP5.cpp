@@ -105,9 +105,9 @@ static bool testStaticAssert() {
 
 // Test - if you believe then you're not afraid.
 // Inheritance paths: 
-// 		- Believer -> NotAfraid -> Person
-// 		- NonBeliever -> Afraid -> Person
-// 		- Believer -> NotAfraid -> Monkey
+// 		- Believer -> NotAfraid -> Person -> Entity
+// 		- NonBeliever -> Afraid -> Person -> Entity
+// 		- Believer -> NotAfraid -> Monkey -> Entity
 class Entity : public OOPPolymorphic<Entity> {
 public:
 
@@ -115,6 +115,10 @@ public:
 	
 	const Type* MyType() {
 		return OOPPolymorphic<Entity>::GetType();
+	}
+
+	char f() {
+		return 'f';
 	}
 };
 
@@ -126,6 +130,10 @@ public:
 	const Type* MyType() {
 		return OOPPolymorphic<Person>::GetType();
 	}
+
+	char p() {
+		return 'p';
+	}
 };
 
 class Monkey : public Entity, public OOPPolymorphic<Monkey> {
@@ -134,6 +142,10 @@ public:
 
 	const Type* MyType() {
 		return OOPPolymorphic<Monkey>::GetType();
+	}
+
+	char m() {
+		return 'm';
 	}
 };
 
@@ -156,6 +168,10 @@ public:
 	const Type* MyType() {
 		return OOPPolymorphic<NotAfraid>::GetType();
 	}
+
+	char na() {
+		return 'n';
+	}
 };
 
 class Believer : public NotAfraid, public OOPPolymorphic<Believer> {
@@ -173,6 +189,10 @@ public:
 
 	const Type* MyType() {
 		return OOPPolymorphic<NonBeliever>::GetType();
+	}
+
+	char b() {
+		return 'b';
 	}
 };
 
@@ -212,16 +232,22 @@ static bool testGraphConstruction() {
 }
 
 static bool testDynamicCast() {
+	Afraid afraid;
+	Person person;
+	NonBeliever nonBeliever;
+	Believer believer;
+	NotAfraid notAfraid;
+	Monkey monkey;
+	Entity entity;
+
 	// Valid dynamic cast - Afraid* is implicitly convertible to Person*
 	Afraid* afraid_ptr = new Afraid();
 	Person* person_ptr = OOP5::my_dynamic_cast<Person*,Afraid*>(afraid_ptr);
 	ASSERT(person_ptr != NULL);
-	ASSERT(typeid(person_ptr).name() == typeid(Person*).name());
 
 	// Valid dynamic cast - Afraid& is implicitly convertible to Person&
-	Afraid& afraid_ref = new Afraid();
+	Afraid& afraid_ref = afraid;
 	Person& person_ref = OOP5::my_dynamic_cast<Person&,Afraid&>(afraid_ref);
-	ASSERT(typeid(person_ref).name() == typeid(Person&).name());
 
 	// Invalid dynamic cast - Person* is not convertible to Afraid*, should return NULL
 	Person* p = new Person();
@@ -229,7 +255,7 @@ static bool testDynamicCast() {
 	ASSERT(a == NULL);
 
 	// Invalid dynamic cast - Person& is not convertible to Afraid&, should throw bad_cast
-	Person& pr = Person();
+	Person& pr = person;
 	try {
 		Afraid& ar = OOP5::my_dynamic_cast<Afraid&, Person&>(pr);
 		ASSERT(false);
@@ -239,20 +265,59 @@ static bool testDynamicCast() {
 	// is convertible to Afraid*
 	Person* pnb = new NonBeliever();
 	Afraid* ap = OOP5::my_dynamic_cast<Afraid*, Person*>(pnb);
-	ASSERT(typeid(ap).name() == typeid(Afraid*).name());
+	ASSERT(ap != NULL);
 
-	// Valid cast - Person* is not convertible to Afraid*, but its runtime type, which is NonBeliever*,
-	// is convertible to Afraid*
-	Person& pnbr = NonBeliever();
+	// Valid cast - Person& is not convertible to Afraid&, but its runtime type, which is NonBeliever&,
+	// is convertible to Afraid&
+	Person& pnbr = nonBeliever;
 	Afraid& apr = OOP5::my_dynamic_cast<Afraid&, Person&>(pnbr);
-	ASSERT(typeid(apr).name() == typeid(Afraid&).name());
+
+	// Invalid cast - while Afraid* is convertible to Person*,
+	// its dynamic type, Believer*, is not convertible to Afraid*
+	Person* pbelieve = new Believer();
+	Afraid* afd = OOP5::my_dynamic_cast<Afraid*, Person*>(pbelieve);
+	ASSERT(afd == NULL);
+
+	// Invalid cast - while Afraid& is convertible to Person&,
+	// its dynamic type, Believer&, is not convertible to Afraid&
+	Person& pbelref = believer;
+	try {
+		Afraid& afred = OOP5::my_dynamic_cast<Afraid&, Person&>(pbelref);
+		ASSERT(false);
+	} catch(std::bad_cast&) {}
+
+	Entity* e = OOP5::my_dynamic_cast<Entity*, Monkey*>(new Believer());
+	ASSERT(e != NULL);
+
+	Afraid* naa = OOP5::my_dynamic_cast<Afraid*, Entity*>(new Person());
+	ASSERT(naa == NULL);
+
+	Entity& ee = OOP5::my_dynamic_cast<Entity&, Monkey&>(believer);
+
+	try {
+		Afraid& aaa = OOP5::my_dynamic_cast<Afraid&, Entity&>(person);
+		ASSERT(false);
+	} catch(std::bad_cast&) {}
 
 	return true;
+}
 
+static bool testCallToDynamicMethods() {
+	Monkey* monkey = OOP5::my_dynamic_cast<Monkey*, Entity*>(new Monkey());
+	ASSERT(monkey->m() == 'm');
+
+	NonBeliever* nonbeliever = OOP5::my_dynamic_cast<NonBeliever*, Entity*>(new NonBeliever());
+	ASSERT(nonbeliever->b() == 'b');
+
+	Person* person = OOP5::my_dynamic_cast<Person*, NonBeliever*>(nonbeliever);
+	ASSERT(person->p() == 'p');
+
+	return true;
 }
 
 int main() {
 	RUN_TEST(testStaticAssert());
 	RUN_TEST(testGraphConstruction());
 	RUN_TEST(testDynamicCast());
+	RUN_TEST(testCallToDynamicMethods());
 }

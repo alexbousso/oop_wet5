@@ -1,7 +1,6 @@
-// This test tries to dynamically cast an OOPPolymorphic type to a non-OOPPolymorphic type.
-// This should fail
+// This test tries to dynamically cast two objects. This should fail
 
-#include "OOP5.h"
+#include "../OOP5.h"
 
 class Entity : public OOPPolymorphic<Entity> {
 public:
@@ -41,12 +40,21 @@ public:
 	}
 };
 
-class NotAfraid : public Person, public Monkey {
+class NotAfraid : public Person, public Monkey, public OOPPolymorphic<NotAfraid> {
+public:
+	NotAfraid() {
+		OOPPolymorphic<NotAfraid>::RegisterInheritence(OOPPolymorphic<Person>::GetType());
+		OOPPolymorphic<NotAfraid>::RegisterInheritence(OOPPolymorphic<Monkey>::GetType());
+	}
+
+	const Type* MyType() {
+		return OOPPolymorphic<NotAfraid>::GetType();
+	}
 };
 
 
 
 int main() {
-    NotAfraid* na = OOP5::my_dynamic_cast<NotAfraid*, Afraid*>(new Afraid());
+    NotAfraid na = OOP5::my_dynamic_cast<NotAfraid, Afraid>(Afraid());
 	return 0;
 }

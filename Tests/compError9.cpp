@@ -1,6 +1,6 @@
-// This test tries to dynamically cast two objects. This should fail
+// This test tries to dynamically cast a pointer type to a reference type. This should fail
 
-#include "OOP5.h"
+#include "../OOP5.h"
 
 class Entity : public OOPPolymorphic<Entity> {
 public:
@@ -55,6 +55,6 @@ public:
 
 
 int main() {
-    NotAfraid na = OOP5::my_dynamic_cast<NotAfraid, Afraid>(Afraid());
+    NotAfraid& na = OOP5::my_dynamic_cast<NotAfraid&, Afraid*>(new Afraid());
 	return 0;
 }

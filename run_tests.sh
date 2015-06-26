@@ -23,15 +23,23 @@ function runCommand {
     fi
 }
 
-for test in $(ls compError*.cpp); do
+rm -f Tests/error_log.txt
+
+for test in $(ls Tests/compError*.cpp); do
 	echo "Trying to compile $test ..."
-	$($COMPILE $test 2> /dev/null)
+	echo "**********************************************************************************" >> Tests/error_log.txt
+	echo "Trying to compile $test :" >> Tests/error_log.txt
+	echo >> Tests/error_log.txt
+	$($COMPILE $test 2>> Tests/error_log.txt)
 	if [[ $? -eq 0 ]]; then
 		echo "TEST ERROR: $test passed but was supposed to fail!"
 		exit 1
 	fi
 done
 
+echo "To see the error log, run the command:"
+echo "    less Tests/error_log.txt"
+echo
 echo "Compiling OOP5.cpp ..."
 
 rm -f *.h.gch

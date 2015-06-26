@@ -181,9 +181,6 @@ public:
 		// Checking if Src is implicitly convertible to Dst, or if both Src and Dst inherit from
 		// the class OOPPolymorphic
 		static_assert(((sizeof(implicitlyConvertible)) | (sizeof(isOOPPolymorphic))) == 1, "");
-		cout << "Src is: " << typeid(src).name() << endl;
-		cout << "Size of isOOPPolymorphic: " << sizeof(isOOPPolymorphic) << endl;
-		cout << "Size of implicitlyConvertible: " << sizeof(implicitlyConvertible) << endl;
 
 		// Find the dynamic type of src
 		const Type* srcStaticType = OOPPolymorphic<SrcClean>::GetType();
@@ -199,13 +196,17 @@ public:
 			}
 		}
 
-		if(is_pointer<Src>::value) {
-			return NULL;
-		} else {
-			assert(is_reference<Src>::value);
-			throw std::bad_cast();
-		}
+		return return_from_dynamic_cast<Dst, SrcClean>(src);
+//		if(is_pointer<Src>::value) {
+//			return NULL;
+//		} else {
+//			assert(is_reference<Src>::value);
+//			throw std::bad_cast();
+//		}
 	}
+
+
+
 
 	static int InheritsFrom(const Type* derived,const Type* base) {
 		if(base == NULL || derived == NULL)
@@ -228,6 +229,16 @@ private:
 	static Src* returnSource(Src& src) {
 		return &src;
 	}
+
+	template<typename Dst, typename SrcClean>
+		static Dst return_from_dynamic_cast(SrcClean* src) {
+			return NULL;
+		}
+
+		template<typename Dst, typename SrcClean>
+		static Dst return_from_dynamic_cast(SrcClean& src) {
+			throw std::bad_cast();
+		}
 
 	static vector<const Type*> findGraphNode(const Type* type) {
 		for(auto it = inheritance_graph.begin(); it != inheritance_graph.end(); it++) {

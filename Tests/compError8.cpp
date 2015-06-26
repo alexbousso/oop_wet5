@@ -1,7 +1,7 @@
 // This test tries to dynamically cast a non-OOPPolymorphic type to a OOPPolymorphic type.
 // This should fail
 
-#include "OOP5.h"
+#include "../OOP5.h"
 
 class Entity : public OOPPolymorphic<Entity> {
 public:
