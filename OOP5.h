@@ -23,24 +23,24 @@ static int uuidCounter = 0;
 // the second element and forth are the parents
 static vector<vector<const Type*>> inheritance_graph = vector<vector<const Type*>>();
 
-typedef char (&yes)[1];
-typedef char (&no)[2];
+typedef char (&my_true_type)[1];
+typedef char (&my_false_type)[0];
 
-template <typename B, typename D>
-struct Host
+template <typename Base, typename Derived>
+struct PickTypeStruct
 {
-	operator B*() const;
-	operator D*();
+	operator Base*() const;
+	operator Derived*();
 };
 
-template <typename B, typename D>
+template <typename Base, typename Derived>
 struct IsBaseOf
 {
 	template <typename T> 
-	static yes check(D*, T);
-	static no check(B*, int);
+	static my_true_type pick_type(Derived*, T);
+	static my_false_type pick_type(Base*, int);
 
-	static const bool value = sizeof(check(Host<B,D>(), int())) == sizeof(yes);
+	static const bool value = sizeof(pick_type(PickTypeStruct<Base, Derived>(), int())) == sizeof(my_true_type);
 };
 
 struct Type {
